@@ -98,8 +98,12 @@ You will not need to make use of any other std::thread API calls in this assignm
   core supports two hyper-threads, so it can execute a total of eight threads interleaved on its execution contents.
   In your write-up, produce a graph of __speedup compared to the reference sequential implementation__ as a function of the number of threads used __FOR VIEW 1__. Is speedup linear in the number of threads used? In your writeup hypothesize why this is (or is not) the case? (you may also wish to produce a graph for VIEW 2 to help you come up with a good answer. Hint: take a careful look at the three-thread datapoint.)
 
-View 1 speedup | 1.97x | 1.65x | 2.42x | 2.47x | 3.18x | 3.37x | 3.98x
-View 2 speedup | 1.71x | 2.25x | 2.70x | 3.13x | 3.56x | 3.96x | 4.39x
+
+
+|Threads|2|3|4|5|6|7|8|
+|---|---|---|---|---|---|---|---|
+| View 1 speedup | 1.97x | 1.65x | 2.42x | 2.47x | 3.18x | 3.37x | 3.98x|
+| View 2 speedup | 1.71x | 2.25x | 2.70x | 3.13x | 3.56x | 3.96x | 4.39x|
 
 > The trend is generally linear to the number of threads, but it depends on the load distributed to each thread. For example, we see in the 3 threads case for view 1, its performance is lower than 2 threads, as the load is unbalanced towards one thread.
 
@@ -108,13 +112,18 @@ View 2 speedup | 1.71x | 2.25x | 2.70x | 3.13x | 3.56x | 3.96x | 4.39x
   the beginning and end of `workerThreadStart()`. How do your measurements
   explain the speedup graph you previously created?
 
-  Thread | Thread 0 | Thread 1 | Thread 2
-  Time Taken | 62ms | 190ms | 62ms
+
+
+  | Thread | Thread 0 | Thread 1 | Thread 2|
+  |---|---|---|---|
+  | Time Taken | 62ms | 190ms | 62ms|
 
   > The load is unbalanced and is higher for Thread 1, so all threads need to wait for the slowest thread Thread 1.
 
-  Thread | Thread 0 | Thread 1 
-  Time Taken | 158ms | 158ms 
+
+  | Thread | Thread 0 | Thread 1 |
+  |---|---|---|
+  | Time Taken | 158ms | 158ms |
 
   > In the two threads case, the load is balanced so the time with maximum throughput is about the same, making the task earlier to finish.
 
@@ -123,17 +132,22 @@ View 2 speedup | 1.71x | 2.25x | 2.70x | 3.13x | 3.56x | 3.96x | 4.39x
   synchronization between threads in your solution. We are expecting you to come up with a single work decomposition policy that will work well for all thread counts---hard coding a solution specific to each configuration is not allowed! (Hint: There is a very simple static
   assignment that will achieve this goal, and no communication/synchronization
   among threads is necessary.). In your writeup, describe your approach to parallelization
-  and report the final 8-thread speedup obtained. 
+  and report the final 8-thread speedup obtained.
 
-View 1 speedup | 1.98x | 2.94x | 3.91x | 4.80x | 5.58x | 6.52x | 7.08x
-View 2 speedup | 2.03x | 2.95x | 3.93x | 4.86x | 5.82x | 6.76x | 7.40x
+|Threads|2|3|4|5|6|7|8|
+|---|---|---|---|---|---|---|---|
+| View 1 speedup | 1.98x | 2.94x | 3.91x | 4.80x | 5.58x | 6.52x | 7.08x|
+| View 2 speedup | 2.03x | 2.95x | 3.93x | 4.86x | 5.82x | 6.76x | 7.40x|
 > Strategy: thread i calculates all n = i (mod ThreadCount) rows.
   
 5. Now run your improved code with 16 threads. Is performance noticably greater than when running with eight threads? Why or why not? 
 
-View 1 speedup | 12.80x
-View 2 speedup | 12.50x
-The performance is noticably greater. Extra threads/cores are available for this local machine with 8 cores.
+|Threads|16|
+|---|---|
+| View 1 speedup | 12.80x|
+| View 2 speedup | 12.50x|
+
+> The performance is noticably greater. Extra threads/cores are available for this local machine with 8 cores.
   
 ## Program 2: Vectorizing Code Using SIMD Intrinsics (20 points) ##
 
