@@ -138,7 +138,7 @@ You will not need to make use of any other std::thread API calls in this assignm
 |---|---|---|---|---|---|---|---|
 | View 1 speedup | 1.98x | 2.94x | 3.91x | 4.80x | 5.58x | 6.52x | 7.08x|
 | View 2 speedup | 2.03x | 2.95x | 3.93x | 4.86x | 5.82x | 6.76x | 7.40x|
-> Strategy: thread i calculates all n = i (mod ThreadCount) rows.
+> Strategy: thread i calculates all `n = i (mod ThreadCount)` rows.
   
 5. Now run your improved code with 16 threads. Is performance noticably greater than when running with eight threads? Why or why not? 
 
@@ -194,7 +194,7 @@ Does the vector utilization increase, decrease or stay the same as `VECTOR_WIDTH
 
 3.  _Extra credit: (1 point)_ Implement a vectorized version of `arraySumSerial` in `arraySumVector`. Your implementation may assume that `VECTOR_WIDTH` is a factor of the input array size `N`. Whereas the serial implementation runs in `O(N)` time, your implementation should aim for runtime of `(N / VECTOR_WIDTH + VECTOR_WIDTH)` or even `(N / VECTOR_WIDTH + log2(VECTOR_WIDTH))`  You may find the `hadd` and `interleave` operations useful.
 
-> Done. O(N / VECTOR_WIDTH + log2(VECTOR_WIDTH)).
+> Done. 'O(N / VECTOR_WIDTH + log2(VECTOR_WIDTH))'.
 
 ## Program 3: Parallel Fractal Generation Using ISPC (20 points) ##
 
@@ -320,6 +320,10 @@ the foreach loop to yield a more straightforward implementation.
   execution? Comparing the performance of rendering the different views
   of the Mandelbrot set may help confirm your hypothesis.).  
 
+> For a 8-wide AVX2 vector instruction, we expect a maximum of an 8x speedup. However, we only observe a speedup of 5.66x and 4.99x for view 1 and 2 respectively. The main culprit is the `mandel` function's `for/if-break` structure with a `maxIterations = 256` for this loop, again displaying a highly branching structures. There are a lot of time where other ALUs are idle and waiting. However, if we optimize this correctly by "grouping similar values together", idle times can be much shorter.
+
+> We have a large variety of value distributions which needs (a large difference of) loop iteration. We instead prefer grouping similar values together with similar calculations (or 'control flow coherence'). A longer description on this topic can be found on https://ispc.github.io/perfguide.html.
+
   We remind you that for the code described in this subsection, the ISPC
   compiler maps gangs of program instances to SIMD instructions executed
   on a single core. This parallelization scheme differs from that of
@@ -349,6 +353,9 @@ different CPU cores).
 1.  Run `mandelbrot_ispc` with the parameter `--tasks`. What speedup do you
   observe on view 1? What is the speedup over the version of `mandelbrot_ispc` that
   does not partition that computation into tasks?
+
+  > We observe a 11.16x times speedup, which is almost 2 times of the speedup of the method that does not partition computation into tasks.
+
 2.  There is a simple way to improve the performance of
   `mandelbrot_ispc --tasks` by changing the number of tasks the code
   creates. By only changing code in the function
@@ -356,6 +363,9 @@ different CPU cores).
   performance that exceeds the sequential version of the code by over 32 times!
   How did you determine how many tasks to create? Why does the
   number you chose work best?
+
+> We have achieved a 64.14x times speedup by splitting into 32 tasks (by trying powers of 2 up to 32 and factors of no. of rows), and observe splitting into 32 tasks has approximately the best performance. This number works the best as we balance the number of tasks (which optimizes speed by grouping compact regions (of similar execution flow)), and the overhead of creating these tasks.
+
 3.  _Extra Credit: (2 points)_ What are differences between the thread
   abstraction (used in Program 1) and the ISPC task abstraction? There
   are some obvious differences in semantics between the (create/join
@@ -364,6 +374,10 @@ different CPU cores).
   happens when you launch 10,000 ISPC tasks? What happens when you launch
   10,000 threads? (For this thought experiment, please discuss in the general case
   - i.e. don't tie your discussion to this given mandelbrot program.)
+
+  > The difference exists in how operations are executed at the hardware level, and where the optimization is done.
+  > Center of execution differences: threads display speedup by using context switching and loading multiple execution context on one (or more) cores, such that more `different` tasks are done at once. ISPC tasks on the other hand uses the multiple ALUs available, such that more `same` tasks on the instruction level are done at once on multiple cores (by using `launch`). The place where parallelization is done is different.
+  > Optimizations: thread optimizations are done by hand to change how the code is executed. ISPC tasks optimizations are done semi-automatically (the hand optimization part is the number of tasks) by underlying software to abuse parallelization on the per instruction level. By using `launch` the ISPC complier can also manage and assign tasks to threads with optimization.
 
 _The smart-thinking student's question_: Hey wait! Why are there two different
 mechanisms (`foreach` and `launch`) for expressing independent, parallelizable
