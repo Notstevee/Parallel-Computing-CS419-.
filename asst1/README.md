@@ -377,9 +377,9 @@ different CPU cores).
 
   > The difference exists in how operations are executed at the hardware level, and where the optimization is done.
 
-  > Center of execution differences: threads display speedup by using context switching and loading multiple execution context on one (or more) cores, such that more `different` tasks are done at once. ISPC tasks on the other hand uses the multiple ALUs available, such that more `same` tasks on the instruction level are done at once on multiple cores (by using `launch`). The place where parallelization is done is different.
+  > Center of execution differences: threads display speedup by using context switching and loading multiple execution context on one (or more) cores, such that more `different` tasks are done at once. ISPC tasks on the other hand uses the multiple ALUs available (SIMD instructions), such that more `same` tasks on the instruction level are done at once on multiple cores (by using `launch`, managed by ISPC complier). The place where parallelization is done is different.
 
-  > Optimizations: thread optimizations are done by hand to change how the code is executed. ISPC tasks optimizations are done semi-automatically (the hand optimization part is the number of tasks) by underlying software to abuse parallelization on the per instruction level. By using `launch` the ISPC complier can also manage and assign tasks to threads with optimization.
+  > Optimizations: thread optimizations are done by hand to change how the code is executed. ISPC tasks optimizations are done semi-automatically (the hand optimization part is the number of tasks) by underlying software to abuse parallelization on the per instruction level. By using `launch` the ISPC complier can also manage and assign tasks to different cores with optimization.
 
 _The smart-thinking student's question_: Hey wait! Why are there two different
 mechanisms (`foreach` and `launch`) for expressing independent, parallelizable
@@ -421,14 +421,16 @@ Note: This problem is a review to double-check your understanding, as it covers 
   Does it improve multi-core speedup (i.e., the benefit of moving from ISPC without-tasks to ISPC with tasks)? Please explain why.
 
 > Strategy: set all values close to 3
+
 |SIMD parallelization|ISPC|task ISPC|
 |---|---|---|
 |Speedup|6.91x|88.47x|
-> SIMD speedup is improved as all tasks have the same instruction set, minimizing wasted time. Multi-core speedup improvement exists also for the same reason.
+
+> SIMD speedup is improved as all tasks have the same instruction set that have high computation requirements compared to time needed to fetch data from memory, minimizing wasted time. Multi-core speedup improvement exists also for the same reason.
 
 3.  Construct a specific input for `sqrt` that __minimizes speedup for ISPC (without-tasks) over the sequential version of the code__. Describe this input, describe why you chose it, and report the resulting relative performance of the ISPC implementations. What is the reason for the loss in efficiency? 
     __(keep in mind we are using the `--target=avx2` option for ISPC, which generates 8-wide SIMD instructions)__. 
-> Strategy: set all values to 1, with ISPC speedup of 2.19x. The speedup advantage is lost (much less than 8x!) as serial instruction does 0 iterations, and supposed parrallelized instructions are minimal. What we have lost is resource allocation overhead.
+> Strategy: set all values to 1, with ISPC speedup of 2.19x. The speedup advantage is lost (much less than 8x!) as serial instruction does 0 iterations, and supposed parrallelized instructions are minimal. What we have lost is resource allocation overhead of getting data from the memory.
 
 4.  _Extra Credit: (up to 2 points)_ Write your own version of the `sqrt` 
  function manually using AVX2 intrinsics. To get credit your 
@@ -454,7 +456,7 @@ elements used. `saxpy` is a *trivially parallelizable computation* and features 
   speedup from using ISPC with tasks do you observe? Explain the performance of this program.
   Do you think it can be substantially improved? (For example, could you rewrite the code to achieve near linear speedup? Yes or No? Please justify your answer.)
 
-> We measure a 1.14x speedup from use of tasks, which is slighly higher than ISPC without task. This is slightly faster as it uses multiple cores, but at the same time we do not see much of the benefits we previouslt have for multiple cores, as this operation is very simple and running time is dominated by memory I/O operations. 
+> We measure a 1.14x speedup from use of tasks, which is slighly higher than ISPC without task. This is slightly faster as it uses multiple cores, but at the same time we do not see much of the benefits we previously have for multiple cores, as this operation is very simple and running time is dominated by the bottleneck in data transfer between memory (we do not have enough bandwidth). 
 
 2. __Extra Credit:__ (1 point) Note that the total memory bandwidth consumed computation in `main.cpp` is `TOTAL_BYTES = 4 * N * sizeof(float);`.  Even though `saxpy` loads one element from X, one element from Y, and writes one element to `result` the multiplier by 4 is correct.  Why is this the case? (Hint, think about how CPU caches work.)
 
