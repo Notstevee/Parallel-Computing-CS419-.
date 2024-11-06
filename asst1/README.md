@@ -376,7 +376,9 @@ different CPU cores).
   - i.e. don't tie your discussion to this given mandelbrot program.)
 
   > The difference exists in how operations are executed at the hardware level, and where the optimization is done.
+
   > Center of execution differences: threads display speedup by using context switching and loading multiple execution context on one (or more) cores, such that more `different` tasks are done at once. ISPC tasks on the other hand uses the multiple ALUs available, such that more `same` tasks on the instruction level are done at once on multiple cores (by using `launch`). The place where parallelization is done is different.
+
   > Optimizations: thread optimizations are done by hand to change how the code is executed. ISPC tasks optimizations are done semi-automatically (the hand optimization part is the number of tasks) by underlying software to abuse parallelization on the per instruction level. By using `launch` the ISPC complier can also manage and assign tasks to threads with optimization.
 
 _The smart-thinking student's question_: Hey wait! Why are there two different
@@ -409,16 +411,32 @@ Note: This problem is a review to double-check your understanding, as it covers 
   single CPU core (no tasks) and when using all cores (with tasks). What 
   is the speedup due to SIMD parallelization? What is the speedup due to 
   multi-core parallelization?
+
+|SIMD parallelization|ISPC|task ISPC|
+|---|---|---|
+|Speedup|4.86x|54.93x|
+
 2.  Modify the contents of the array values to improve the relative speedup 
   of the ISPC implementations. Construct a specifc input that __maximizes speedup over the sequential version of the code__ and report the resulting speedup achieved (for both the with- and without-tasks ISPC implementations). Does your modification improve SIMD speedup?
   Does it improve multi-core speedup (i.e., the benefit of moving from ISPC without-tasks to ISPC with tasks)? Please explain why.
+
+> Strategy: set all values close to 3
+|SIMD parallelization|ISPC|task ISPC|
+|---|---|---|
+|Speedup|6.91x|88.47x|
+> SIMD speedup is improved as all tasks have the same instruction set, minimizing wasted time. Multi-core speedup improvement exists also for the same reason.
+
 3.  Construct a specific input for `sqrt` that __minimizes speedup for ISPC (without-tasks) over the sequential version of the code__. Describe this input, describe why you chose it, and report the resulting relative performance of the ISPC implementations. What is the reason for the loss in efficiency? 
     __(keep in mind we are using the `--target=avx2` option for ISPC, which generates 8-wide SIMD instructions)__. 
+> Strategy: set all values to 1, with ISPC speedup of 2.19x. The speedup advantage is lost (much less than 8x!) as serial instruction does 0 iterations, and supposed parrallelized instructions are minimal. What we have lost is resource allocation overhead.
+
 4.  _Extra Credit: (up to 2 points)_ Write your own version of the `sqrt` 
  function manually using AVX2 intrinsics. To get credit your 
     implementation should be nearly as fast (or faster) than the binary 
     produced using ISPC. You may find the [Intel Intrinsics Guide](https://software.intel.com/sites/landingpage/IntrinsicsGuide/) 
     very helpful.
+
+  > Not successful.
  
 ## Program 5: BLAS `saxpy` (10 points) ##
 
