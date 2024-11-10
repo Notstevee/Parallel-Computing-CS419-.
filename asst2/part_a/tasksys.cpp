@@ -74,6 +74,10 @@ void TaskSystemParallelSpawn::run(IRunnable* runnable, int num_total_tasks) {
     // method in Part A.  The implementation provided below runs all
     // tasks sequentially on the calling thread.
     //
+for (int i = 0; i < num_total_tasks; i++) {
+        runnable->runTask(i, num_total_tasks);
+    }
+
 
     std::atomic<int> thr;
     thr = 0;
@@ -127,6 +131,7 @@ TaskSystemParallelThreadPoolSpinning::TaskSystemParallelThreadPoolSpinning(int n
     numtask=-1;
     done=0;
     alldone=0;
+    killsig=0;
     numthreads=num_threads;
     gmutex.unlock();
 
@@ -137,18 +142,23 @@ TaskSystemParallelThreadPoolSpinning::TaskSystemParallelThreadPoolSpinning(int n
                     
                 while (true){
                     gmutex.lock();
-
-                    if (numtask==-1) {gmutex.unlock();continue;}
                     
+                    if (killsig>0) {gmutex.unlock();killsig++;break;}
+                    if (numtask==-1) {gmutex.unlock();continue;}
+
                     int c=curtask++;
-                    if (c >=numtask || numtask==-1){
+                    if (c >=numtask){
+                        alldone++;
                         gmutex.unlock();
                         continue;
                     }
-                    else runnabl->runTask(c, numtask);
-                    
-                    gmutex.unlock();
+
+                    runnabl->runTask(c, numtask);
+
                     done++;
+                    gmutex.unlock();
+                    
+                   
                     
 
                     
@@ -162,7 +172,21 @@ TaskSystemParallelThreadPoolSpinning::TaskSystemParallelThreadPoolSpinning(int n
 }
 
 TaskSystemParallelThreadPoolSpinning::~TaskSystemParallelThreadPoolSpinning() {
+    gmutex.lock();
+    killsig++;
+    gmutex.unlock();
 
+   while (true){
+        gmutex.lock();
+        if ((int)killsig>numthreads){
+            for (int i=0;i<numthreads;i++){
+                tpool[i].join();
+            }
+            gmutex.unlock();
+            break;
+        }
+        gmutex.unlock();
+   }
 }
 
 void TaskSystemParallelThreadPoolSpinning::run(IRunnable* runnable, int num_total_tasks) {
@@ -176,37 +200,43 @@ void TaskSystemParallelThreadPoolSpinning::run(IRunnable* runnable, int num_tota
     // tasks sequentially on the calling thread.
     //
 
-    while (true){
+
         gmutex.lock();
-        if (numtask!=-1){
-            gmutex.unlock();
-            continue;
-        }
+
         runnabl=runnable;
         numtask=num_total_tasks;
         done=0;
         alldone=0;
         curtask=0;
+       
         gmutex.unlock();
-        break;
-    }
+
     
 
     
     while (true){
+
         gmutex.lock();
-        if (done>=numtask && curtask>numtask){
-            numtask=-1;
-            done=0;
-            alldone=1;
+        if (numtask!=-1 && done==numtask ){
+
+            numtask=-2;
+            done=-1;
             curtask=0;
             gmutex.unlock();
-            break;
+
+            while (true){
+                gmutex.lock();
+                if (alldone<numthreads){
+                    gmutex.unlock();
+                    continue;
+                }
+                break;
+            }
+            gmutex.unlock();
+            break; 
         }
         gmutex.unlock();
     }
-
-
     
     return; 
 

@@ -51,7 +51,7 @@ class TaskSystemParallelSpawn: public ITaskSystem {
 class TaskSystemParallelThreadPoolSpinning: public ITaskSystem {
     public:
         int numthreads;
-        int numtask,curtask,done,alldone;
+        std::atomic<int> numtask,curtask,done,alldone,killsig;
         std::thread *tpool;
         std::mutex gmutex;
         IRunnable *runnabl;
