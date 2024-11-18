@@ -5,6 +5,8 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <queue>
+#include <unordered_map>
 #include <condition_variable>
 
 /*
@@ -70,7 +72,17 @@ class TaskSystemParallelThreadPoolSpinning: public ITaskSystem {
  * a thread pool. See definition of ITaskSystem in
  * itasksys.h for documentation of the ITaskSystem interface.
  */
-class TaskSystemParallelThreadPoolSleeping: public ITaskSystem {
+
+
+ class TaskSystemParallelThreadPoolSleeping: public ITaskSystem {
+
+    private:
+        int numthreads;
+        int numtask,curtask,done,killsig;
+        std::thread *tpool;
+        std::mutex gmutex,dmutex,domutex;
+        std::condition_variable cv,donecv;
+        IRunnable *runnabl;
     public:
         TaskSystemParallelThreadPoolSleeping(int num_threads);
         ~TaskSystemParallelThreadPoolSleeping();
@@ -79,6 +91,8 @@ class TaskSystemParallelThreadPoolSleeping: public ITaskSystem {
         TaskID runAsyncWithDeps(IRunnable* runnable, int num_total_tasks,
                                 const std::vector<TaskID>& deps);
         void sync();
-};
+
+
+}; 
 
 #endif
